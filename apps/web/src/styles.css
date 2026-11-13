@@ -1,0 +1,23 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #e5eefb;
+  background: #0f172a;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; }
+
+main { max-width: 760px; margin: 0 auto; padding: 6rem 1.5rem; }
+
+h1 { font-size: clamp(2.4rem, 8vw, 4.8rem); margin: 0 0 1rem; }
+
+p { font-size: 1.1rem; line-height: 1.6; }
+
+.eyebrow { color: #7dd3fc; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+section { margin-top: 2.5rem; padding: 1.25rem 1.5rem; border: 1px solid #334155; border-radius: .75rem; background: #172033; }
+
+section h2 { margin-top: 0; }
+.success { color: #86efac; }
+.error { color: #fca5a5; }
