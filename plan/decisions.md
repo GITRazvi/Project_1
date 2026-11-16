@@ -30,3 +30,18 @@ Cloud Notes has a deliberately small CRUD feature set but naturally exercises
 the complete path from React through an API to PostgreSQL and a cloud deployment.
 The first version uses temporary in-memory storage so the API and UI can be
 learned before database complexity is introduced.
+
+## 2026-11-16 — Use PostgreSQL in Docker Compose for persistent development data
+
+Run PostgreSQL as a separate Compose service with a named volume. The Node.js
+API connects to it through the private Compose network, which mirrors the
+application-to-database boundary used in cloud deployments. The API will create
+the initial `notes` table on startup; later, this can evolve into versioned
+database migrations.
+
+## 2026-11-16 — Test the API with PostgreSQL in CI
+
+Use Vitest with Fastify's in-process request injection for API tests, while
+connecting the repository to a temporary PostgreSQL service in GitHub Actions.
+This checks the real SQL-backed CRUD behavior without exposing a network port
+for the API during tests.

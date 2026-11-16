@@ -39,9 +39,16 @@ together.
 | `PATCH` | `/api/notes/:id` | Update a note. |
 | `DELETE` | `/api/notes/:id` | Delete a note. |
 
-The first version will keep notes in the API process memory. The data will
-reset when the API restarts; that is intentional for the first learning step.
-PostgreSQL will replace this temporary storage in the database milestone.
+### Implementation status
+
+- [x] `GET /api/notes`
+- [x] `POST /api/notes`
+- [x] `PATCH /api/notes/:id`
+- [x] `DELETE /api/notes/:id`
+
+The running API stores notes in PostgreSQL. The database runs as a separate
+Docker Compose service and retains its data in a named Docker volume, so notes
+survive API and database-container restarts.
 
 ## Not part of the first version
 
@@ -51,9 +58,9 @@ PostgreSQL will replace this temporary storage in the database milestone.
 
 ## Build order
 
-1. Implement `GET /api/notes` and `POST /api/notes` with temporary in-memory
-   storage.
-2. Add a form and note list in React.
-3. Add editing and deletion.
-4. Add PostgreSQL persistence, tests, authentication, and cloud deployment in
+1. [x] Implement `GET /api/notes` and `POST /api/notes` with temporary
+   in-memory storage.
+2. [x] Add a form and note list in React.
+3. [x] Add editing and deletion.
+4. [ ] Add PostgreSQL persistence, tests, authentication, and cloud deployment in
    later milestones.

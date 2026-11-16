@@ -20,14 +20,18 @@ continuous integration, and cloud deployment.
 - [ ] 2. Set up Git conventions, issue/branch workflow, and repository docs.
 - [x] 3. Create the TypeScript React web application.
 - [x] 4. Create the Node.js TypeScript API and connect it to the web app.
-- [ ] 5. Add PostgreSQL and run the complete stack locally with Docker Compose.
+- [x] 5. Add PostgreSQL and run the complete stack locally with Docker Compose.
   - [x] Containerize the web and API development services.
-  - [ ] Add PostgreSQL and connect the API to it.
+  - [x] Add PostgreSQL and connect the API to it.
 - [ ] 6. Add authentication, validation, and automated tests.
+  - [x] Add PostgreSQL-backed API tests.
+  - [ ] Add authentication and broader UI/API test coverage.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
+  - [x] Add the build-and-test GitHub Actions workflow.
+  - [ ] Commit and push the workflow, then inspect its first GitHub run.
 - [ ] 8. Deploy the application, configure secrets, and document operations.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Set up Git conventions, issue/branch workflow, and repository documentation.
+Commit and push the CI workflow to GitHub, then inspect its first run.
