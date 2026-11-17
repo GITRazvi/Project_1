@@ -69,6 +69,18 @@ npm test
 The test suite creates and removes its own notes. Continuous deployment is not
 configured yet because it requires a chosen cloud host and deployment secrets.
 
+## Authentication
+
+Cloud Notes has a simple first-party account system. Create an account from the
+web app with an email address and a password between 8 and 72 characters. The
+API hashes the password with bcrypt before storing it in PostgreSQL. After a
+successful sign-up or login, the API sends an HTTP-only session cookie; the
+browser automatically includes it in later requests, but React cannot read it.
+
+Every note query includes the authenticated user's ID, so users can view and
+change only their own notes. This first version intentionally does not include
+email verification, password reset, multi-factor authentication, or OAuth.
+
 ## Structure
 
 - `apps/web` — React, TypeScript, and Vite client

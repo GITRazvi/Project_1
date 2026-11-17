@@ -84,3 +84,18 @@
 - CI will activate on the configured GitHub remote after these changes are
   committed and pushed. CD remains intentionally unconfigured until a cloud
   hosting provider and deployment credentials are selected.
+
+## 2026-11-17
+
+- Started simple account authentication: hashed passwords, database-backed
+  sessions, and note ownership.
+- Added PostgreSQL `users` and `sessions` tables, bcrypt password hashing, and
+  HTTP-only, same-site session cookies.
+- Added account routes for sign-up, log-in, log-out, and session lookup. Notes
+  now require a session and are filtered by the authenticated user ID.
+- Added the React log-in/sign-up screen and a log-out control in the notes app.
+- Verified `npm run build`, the expanded PostgreSQL-backed API suite, the
+  running API container, and the browser login screen. Test users and notes are
+  removed after each test.
+- Completed roadmap milestone 6. Next: commit and push the authentication
+  changes, then inspect the expanded CI run on GitHub.

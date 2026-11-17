@@ -1,0 +1,106 @@
+import { randomUUID } from 'node:crypto';
+import { Pool } from 'pg';
+import type { AuthRepository, User, UserWithPassword } from './auth.js';
+
+type UserRow = {
+  id: string;
+  email: string;
+  password_hash: string;
+  created_at: Date;
+};
+
+function mapUser(row: UserRow): User {
+  return {
+    id: row.id,
+    email: row.email,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+/** PostgreSQL-backed users and opaque browser sessions. */
+export class PostgresAuthRepository implements AuthRepository {
+  private constructor(private readonly pool: Pool) {}
+
+  static async connect(connectionString: string): Promise<PostgresAuthRepository> {
+    const repository = new PostgresAuthRepository(new Pool({ connectionString }));
+    await repository.initialize();
+    return repository;
+  }
+
+  async createUser(email: string, passwordHash: string): Promise<User | null> {
+    const result = await this.pool.query<UserRow>(`
+      INSERT INTO users (id, email, password_hash)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email) DO NOTHING
+      RETURNING id, email, password_hash, created_at
+    `, [randomUUID(), email, passwordHash]);
+
+    return result.rows[0] ? mapUser(result.rows[0]) : null;
+  }
+
+  async findUserByEmail(email: string): Promise<UserWithPassword | null> {
+    const result = await this.pool.query<UserRow>(`
+      SELECT id, email, password_hash, created_at
+      FROM users
+      WHERE email = $1
+    `, [email]);
+    const user = result.rows[0];
+
+    if (!user) return null;
+
+    return { ...mapUser(user), passwordHash: user.password_hash };
+  }
+
+  async createSession(userId: string): Promise<string> {
+    const sessionId = randomUUID();
+
+    await this.pool.query(`
+      INSERT INTO sessions (id, user_id, expires_at)
+      VALUES ($1, $2, NOW() + INTERVAL '7 days')
+    `, [sessionId, userId]);
+
+    return sessionId;
+  }
+
+  async findUserBySessionId(sessionId: string): Promise<User | null> {
+    const result = await this.pool.query<UserRow>(`
+      SELECT users.id, users.email, users.password_hash, users.created_at
+      FROM sessions
+      INNER JOIN users ON users.id = sessions.user_id
+      WHERE sessions.id = $1 AND sessions.expires_at > NOW()
+    `, [sessionId]);
+
+    return result.rows[0] ? mapUser(result.rows[0]) : null;
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    await this.pool.query('DELETE FROM sessions WHERE id = $1', [sessionId]);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.pool.query('DELETE FROM users WHERE id = $1', [userId]);
+  }
+
+  close(): Promise<void> {
+    return this.pool.end();
+  }
+
+  private async initialize(): Promise<void> {
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY,
+        email VARCHAR(254) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+  }
+}

@@ -45,3 +45,11 @@ Use Vitest with Fastify's in-process request injection for API tests, while
 connecting the repository to a temporary PostgreSQL service in GitHub Actions.
 This checks the real SQL-backed CRUD behavior without exposing a network port
 for the API during tests.
+
+## 2026-11-17 — Use database sessions with HTTP-only cookies for first-party login
+
+The API will hash passwords with bcrypt, store opaque session IDs in PostgreSQL,
+and send the ID only in an HTTP-only, same-site cookie. This is a simple
+first-party session model that keeps password hashes and session identifiers out
+of React state and browser JavaScript. Email verification, password reset, and
+external identity providers remain future work.

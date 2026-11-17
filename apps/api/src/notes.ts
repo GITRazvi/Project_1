@@ -14,28 +14,25 @@ export type CreateNoteInput = {
 };
 
 export interface NotesRepository {
-  list(): Promise<Note[]>;
-  create(input: CreateNoteInput): Promise<Note>;
-  update(id: string, input: CreateNoteInput): Promise<Note | null>;
-  delete(id: string): Promise<boolean>;
+  list(userId: string): Promise<Note[]>;
+  create(userId: string, input: CreateNoteInput): Promise<Note>;
+  update(userId: string, id: string, input: CreateNoteInput): Promise<Note | null>;
+  delete(userId: string, id: string): Promise<boolean>;
 }
 
 /**
- * Temporary storage for the first learning version of Cloud Notes.
- *
- * The array exists only while the API process is running. A later PostgreSQL
- * repository will provide the same operations with permanent storage.
+ * Temporary storage used only by fast in-process tests.
  */
 export class NotesStore implements NotesRepository {
-  private readonly notes: Note[] = [];
+  private readonly notes: Array<Note & { userId: string }> = [];
 
-  async list(): Promise<Note[]> {
-    return [...this.notes].sort(
+  async list(userId: string): Promise<Note[]> {
+    return this.notes.filter((note) => note.userId === userId).sort(
       (first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt),
-    );
+    ).map(({ userId: _userId, ...note }) => note);
   }
 
-  async create(input: CreateNoteInput): Promise<Note> {
+  async create(userId: string, input: CreateNoteInput): Promise<Note> {
     const timestamp = new Date().toISOString();
     const note: Note = {
       id: randomUUID(),
@@ -45,23 +42,26 @@ export class NotesStore implements NotesRepository {
       updatedAt: timestamp,
     };
 
-    this.notes.push(note);
+    this.notes.push({ ...note, userId });
     return note;
   }
 
-  async update(id: string, input: CreateNoteInput): Promise<Note | null> {
-    const note = this.notes.find((candidate) => candidate.id === id);
+  async update(userId: string, id: string, input: CreateNoteInput): Promise<Note | null> {
+    const note = this.notes.find((candidate) => candidate.id === id && candidate.userId === userId);
 
     if (!note) return null;
 
     note.title = input.title;
     note.content = input.content;
     note.updatedAt = new Date().toISOString();
-    return note;
+    const { userId: _userId, ...publicNote } = note;
+    return publicNote;
   }
 
-  async delete(id: string): Promise<boolean> {
-    const noteIndex = this.notes.findIndex((candidate) => candidate.id === id);
+  async delete(userId: string, id: string): Promise<boolean> {
+    const noteIndex = this.notes.findIndex(
+      (candidate) => candidate.id === id && candidate.userId === userId,
+    );
 
     if (noteIndex === -1) return false;
 

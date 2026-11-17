@@ -8,10 +8,17 @@ type Note = {
   updatedAt: string;
 };
 
+type User = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
+
+type AuthMode = 'login' | 'register';
+
 async function getErrorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { message?: unknown };
-
     if (typeof body.message === 'string') return body.message;
   } catch {
     // Use the status message when the response does not contain JSON.
@@ -28,10 +35,17 @@ function formatDate(isoDate: string): string {
 }
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -46,6 +60,11 @@ export default function App() {
     try {
       const response = await fetch('/api/notes');
 
+      if (response.status === 401) {
+        setUser(null);
+        setNotes([]);
+        return;
+      }
       if (!response.ok) throw new Error(await getErrorMessage(response));
 
       setNotes((await response.json()) as Note[]);
@@ -57,10 +76,26 @@ export default function App() {
   }
 
   useEffect(() => {
-    void loadNotes();
+    async function loadSession() {
+      try {
+        const response = await fetch('/api/auth/me');
+
+        if (response.status === 401) return;
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+
+        setUser((await response.json()) as User);
+        await loadNotes();
+      } catch (error: unknown) {
+        setAuthError(error instanceof Error ? error.message : 'Could not check your session.');
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+
+    void loadSession();
   }, []);
 
-  function resetForm() {
+  function resetNoteForm() {
     setEditingNote(null);
     setTitle('');
     setContent('');
@@ -73,6 +108,39 @@ export default function App() {
     setContent(note.content);
     setSubmitError(null);
     setSuccessMessage(null);
+  }
+
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError(null);
+    setIsAuthenticating(true);
+
+    try {
+      const response = await fetch(`/api/auth/${authMode === 'login' ? 'login' : 'register'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+
+      setUser((await response.json()) as User);
+      setPassword('');
+      await loadNotes();
+    } catch (error: unknown) {
+      setAuthError(error instanceof Error ? error.message : 'Could not sign you in.');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    setNotes([]);
+    setLoadError(null);
+    setSuccessMessage(null);
+    resetNoteForm();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -111,7 +179,7 @@ export default function App() {
         setSuccessMessage('Note saved.');
       }
 
-      resetForm();
+      resetNoteForm();
     } catch (error: unknown) {
       setSubmitError(error instanceof Error ? error.message : 'Could not save the note.');
     } finally {
@@ -120,9 +188,7 @@ export default function App() {
   }
 
   async function handleDelete(note: Note) {
-    const approved = window.confirm(`Delete "${note.title}"? This cannot be undone.`);
-
-    if (!approved) return;
+    if (!window.confirm(`Delete "${note.title}"? This cannot be undone.`)) return;
 
     setDeletingId(note.id);
     setSubmitError(null);
@@ -134,9 +200,7 @@ export default function App() {
       if (!response.ok) throw new Error(await getErrorMessage(response));
 
       setNotes((currentNotes) => currentNotes.filter((currentNote) => currentNote.id !== note.id));
-
-      if (editingNote?.id === note.id) resetForm();
-
+      if (editingNote?.id === note.id) resetNoteForm();
       setSuccessMessage('Note deleted.');
     } catch (error: unknown) {
       setSubmitError(error instanceof Error ? error.message : 'Could not delete the note.');
@@ -145,15 +209,76 @@ export default function App() {
     }
   }
 
+  if (isCheckingSession) {
+    return <main className="auth-shell"><p className="state card">Checking your session…</p></main>;
+  }
+
+  if (!user) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card card" aria-labelledby="auth-heading">
+          <p className="eyebrow">Cloud Notes</p>
+          <h1 id="auth-heading">{authMode === 'login' ? 'Welcome back.' : 'Create your space.'}</h1>
+          <p className="intro">Your account keeps your notes separate from everyone else’s.</p>
+          <form onSubmit={handleAuth}>
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={isAuthenticating}
+              required
+            />
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              minLength={8}
+              maxLength={72}
+              disabled={isAuthenticating}
+              required
+            />
+            {authError && <p className="message error" role="alert">{authError}</p>}
+            <button type="submit" disabled={isAuthenticating}>
+              {isAuthenticating ? 'Please wait…' : authMode === 'login' ? 'Log in' : 'Create account'}
+            </button>
+          </form>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              setAuthMode((mode) => mode === 'login' ? 'register' : 'login');
+              setAuthError(null);
+            }}
+          >
+            {authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Log in'}
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <header className="page-header">
-        <p className="eyebrow">Cloud Notes</p>
-        <h1>Write it down. Keep learning.</h1>
-        <p className="intro">
-          Your notes travel from this React form to the Node.js API. For now, they live in
-          temporary memory; PostgreSQL will make them permanent later.
-        </p>
+        <div className="header-row">
+          <div>
+            <p className="eyebrow">Cloud Notes</p>
+            <h1>Write it down. Keep learning.</h1>
+          </div>
+          <div className="account-actions">
+            <span>{user.email}</span>
+            <button type="button" className="secondary-button" onClick={() => void handleLogout()}>
+              Log out
+            </button>
+          </div>
+        </div>
+        <p className="intro">Your notes are private to your account and stored in PostgreSQL.</p>
       </header>
 
       <div className="workspace">
@@ -161,93 +286,36 @@ export default function App() {
           <h2 id="new-note-heading">{editingNote ? 'Edit note' : 'New note'}</h2>
           <form onSubmit={handleSubmit}>
             <label htmlFor="note-title">Title</label>
-            <input
-              id="note-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              maxLength={120}
-              placeholder="What do you want to remember?"
-              disabled={isSaving}
-              required
-            />
-
+            <input id="note-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="What do you want to remember?" disabled={isSaving} required />
             <label htmlFor="note-content">Content</label>
-            <textarea
-              id="note-content"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              maxLength={10_000}
-              placeholder="Write your note here…"
-              rows={7}
-              disabled={isSaving}
-              required
-            />
-
+            <textarea id="note-content" value={content} onChange={(event) => setContent(event.target.value)} maxLength={10_000} placeholder="Write your note here…" rows={7} disabled={isSaving} required />
             {submitError && <p className="message error" role="alert">{submitError}</p>}
             {successMessage && <p className="message success" role="status">{successMessage}</p>}
-
             <div className="form-actions">
-              <button type="submit" disabled={isSaving}>
-                {isSaving ? 'Saving…' : editingNote ? 'Save changes' : 'Save note'}
-              </button>
-              {editingNote && (
-                <button type="button" className="secondary-button" onClick={resetForm} disabled={isSaving}>
-                  Cancel
-                </button>
-              )}
+              <button type="submit" disabled={isSaving}>{isSaving ? 'Saving…' : editingNote ? 'Save changes' : 'Save note'}</button>
+              {editingNote && <button type="button" className="secondary-button" onClick={resetNoteForm} disabled={isSaving}>Cancel</button>}
             </div>
           </form>
         </section>
 
         <section className="notes-panel" aria-labelledby="your-notes-heading">
           <div className="notes-heading">
-            <div>
-              <p className="section-label">Your collection</p>
-              <h2 id="your-notes-heading">Notes</h2>
-            </div>
+            <div><p className="section-label">Your collection</p><h2 id="your-notes-heading">Notes</h2></div>
             {!isLoading && !loadError && <span className="note-count">{notes.length}</span>}
           </div>
-
           {isLoading && <p className="state card">Loading notes…</p>}
-
-          {loadError && (
-            <div className="state card error-state" role="alert">
-              <p>We could not load your notes: {loadError}</p>
-              <button type="button" className="secondary-button" onClick={() => void loadNotes()}>
-                Try again
-              </button>
-            </div>
-          )}
-
-          {!isLoading && !loadError && notes.length === 0 && (
-            <p className="state card">No notes yet. Your first note will appear here.</p>
-          )}
-
+          {loadError && <div className="state card error-state" role="alert"><p>We could not load your notes: {loadError}</p><button type="button" className="secondary-button" onClick={() => void loadNotes()}>Try again</button></div>}
+          {!isLoading && !loadError && notes.length === 0 && <p className="state card">No notes yet. Your first note will appear here.</p>}
           {!isLoading && !loadError && notes.length > 0 && (
             <ol className="notes-list">
               {notes.map((note) => (
                 <li key={note.id} className="note-card card">
                   <article>
                     <p className="note-date">Created {formatDate(note.createdAt)}</p>
-                    <h3>{note.title}</h3>
-                    <p className="note-content">{note.content}</p>
+                    <h3>{note.title}</h3><p className="note-content">{note.content}</p>
                     <div className="note-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => startEditing(note)}
-                        disabled={isSaving || deletingId === note.id}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="delete-button"
-                        onClick={() => void handleDelete(note)}
-                        disabled={isSaving || deletingId === note.id}
-                      >
-                        {deletingId === note.id ? 'Deleting…' : 'Delete'}
-                      </button>
+                      <button type="button" className="secondary-button" onClick={() => startEditing(note)} disabled={isSaving || deletingId === note.id}>Edit</button>
+                      <button type="button" className="delete-button" onClick={() => void handleDelete(note)} disabled={isSaving || deletingId === note.id}>{deletingId === note.id ? 'Deleting…' : 'Delete'}</button>
                     </div>
                   </article>
                 </li>

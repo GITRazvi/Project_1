@@ -23,9 +23,10 @@ continuous integration, and cloud deployment.
 - [x] 5. Add PostgreSQL and run the complete stack locally with Docker Compose.
   - [x] Containerize the web and API development services.
   - [x] Add PostgreSQL and connect the API to it.
-- [ ] 6. Add authentication, validation, and automated tests.
+- [x] 6. Add authentication, validation, and automated tests.
   - [x] Add PostgreSQL-backed API tests.
-  - [ ] Add authentication and broader UI/API test coverage.
+  - [x] Add first-party authentication and API coverage.
+  - [ ] Add broader UI test coverage.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
   - [x] Add the build-and-test GitHub Actions workflow.
   - [ ] Commit and push the workflow, then inspect its first GitHub run.
@@ -34,4 +35,4 @@ continuous integration, and cloud deployment.
 
 ## Current focus
 
-Commit and push the CI workflow to GitHub, then inspect its first run.
+Commit and push the authentication changes, then inspect the expanded CI run.

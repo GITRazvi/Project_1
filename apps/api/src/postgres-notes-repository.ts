@@ -30,39 +30,43 @@ export class PostgresNotesRepository implements NotesRepository {
     return repository;
   }
 
-  async list(): Promise<Note[]> {
+  async list(userId: string): Promise<Note[]> {
     const result = await this.pool.query<NoteRow>(`
       SELECT id, title, content, created_at, updated_at
       FROM notes
+      WHERE user_id = $1
       ORDER BY created_at DESC, id DESC
-    `);
+    `, [userId]);
 
     return result.rows.map(mapNote);
   }
 
-  async create(input: CreateNoteInput): Promise<Note> {
+  async create(userId: string, input: CreateNoteInput): Promise<Note> {
     const result = await this.pool.query<NoteRow>(`
-      INSERT INTO notes (id, title, content)
-      VALUES ($1, $2, $3)
+      INSERT INTO notes (id, user_id, title, content)
+      VALUES ($1, $2, $3, $4)
       RETURNING id, title, content, created_at, updated_at
-    `, [randomUUID(), input.title, input.content]);
+    `, [randomUUID(), userId, input.title, input.content]);
 
     return mapNote(result.rows[0]);
   }
 
-  async update(id: string, input: CreateNoteInput): Promise<Note | null> {
+  async update(userId: string, id: string, input: CreateNoteInput): Promise<Note | null> {
     const result = await this.pool.query<NoteRow>(`
       UPDATE notes
-      SET title = $2, content = $3, updated_at = NOW()
-      WHERE id = $1
+      SET title = $3, content = $4, updated_at = NOW()
+      WHERE id = $1 AND user_id = $2
       RETURNING id, title, content, created_at, updated_at
-    `, [id, input.title, input.content]);
+    `, [id, userId, input.title, input.content]);
 
     return result.rows[0] ? mapNote(result.rows[0]) : null;
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await this.pool.query('DELETE FROM notes WHERE id = $1', [id]);
+  async delete(userId: string, id: string): Promise<boolean> {
+    const result = await this.pool.query(
+      'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+      [id, userId],
+    );
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -74,11 +78,16 @@ export class PostgresNotesRepository implements NotesRepository {
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS notes (
         id UUID PRIMARY KEY,
+        user_id UUID NOT NULL,
         title VARCHAR(120) NOT NULL,
         content TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    await this.pool.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS user_id UUID');
+    await this.pool.query(
+      'CREATE INDEX IF NOT EXISTS notes_user_id_created_at_idx ON notes (user_id, created_at DESC)',
+    );
   }
 }

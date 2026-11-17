@@ -42,9 +42,48 @@ textarea:disabled {
   padding: 5.5rem 1.5rem;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.auth-card {
+  width: min(100%, 480px);
+  padding: 2rem;
+}
+
+.auth-card h1 {
+  font-size: clamp(2.4rem, 8vw, 4rem);
+}
+
+.auth-card .intro {
+  margin-bottom: 1.5rem;
+}
+
 .page-header {
   max-width: 730px;
   margin-bottom: 3rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.account-actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  color: #bae6fd;
+  font-size: 0.88rem;
+}
+
+.account-actions button {
+  padding: 0.55rem 0.8rem;
 }
 
 .eyebrow,
@@ -225,6 +264,21 @@ button:not(:disabled):hover {
   background: #164e63;
 }
 
+.text-button {
+  margin-top: 1.25rem;
+  padding: 0;
+  color: #7dd3fc;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: transparent;
+}
+
+.text-button:not(:disabled):hover {
+  filter: none;
+  text-decoration: underline;
+  transform: none;
+}
+
 .delete-button {
   color: #ffe4e6;
   background: #9f1239;
@@ -282,5 +336,13 @@ button:not(:disabled):hover {
 
   .composer {
     position: static;
+  }
+
+  .header-row {
+    display: grid;
+  }
+
+  .account-actions {
+    justify-items: start;
   }
 }

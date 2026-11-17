@@ -19,6 +19,7 @@ together.
 - Edit a note.
 - Delete a note after a confirmation prompt.
 - Show useful empty, loading, and error states in the web app.
+- Sign up, log in, and log out; each user can access only their own notes.
 
 ## Note data
 
@@ -45,6 +46,7 @@ together.
 - [x] `POST /api/notes`
 - [x] `PATCH /api/notes/:id`
 - [x] `DELETE /api/notes/:id`
+- [x] Sign-up, log-in, log-out, and user-owned notes
 
 The running API stores notes in PostgreSQL. The database runs as a separate
 Docker Compose service and retains its data in a named Docker volume, so notes
@@ -52,7 +54,8 @@ survive API and database-container restarts.
 
 ## Not part of the first version
 
-- Sign-in, accounts, or shared notes.
+- Email verification, password reset, and third-party sign-in.
+- Shared notes.
 - File attachments, search, tags, or rich-text editing.
 - A cloud database or public deployment.
 
@@ -62,5 +65,5 @@ survive API and database-container restarts.
    in-memory storage.
 2. [x] Add a form and note list in React.
 3. [x] Add editing and deletion.
-4. [ ] Add PostgreSQL persistence, tests, authentication, and cloud deployment in
-   later milestones.
+4. [x] Add PostgreSQL persistence, tests, and authentication.
+5. [ ] Deploy to the cloud after choosing a hosting provider.
