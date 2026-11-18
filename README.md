@@ -57,7 +57,7 @@ npm run dev    # Start the API and web app together
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs for pull
 requests targeting `main` and for pushes to `main`. It starts a temporary
 PostgreSQL service, installs dependencies with `npm ci`, builds both
-applications, and runs the API test suite.
+applications, and runs the API and React interface test suites.
 
 To run the same tests locally while Docker Compose is running:
 
@@ -66,8 +66,10 @@ $env:DATABASE_URL = "postgresql://cloud_notes:cloud_notes@localhost:5432/cloud_n
 npm test
 ```
 
-The test suite creates and removes its own notes. Continuous deployment is not
-configured yet because it requires a chosen cloud host and deployment secrets.
+The API test suite creates and removes its own notes; the React tests mock API
+responses to check browser behavior without needing a running API. Continuous
+deployment is not configured yet because it requires a chosen cloud host and
+deployment secrets.
 
 ## Authentication
 

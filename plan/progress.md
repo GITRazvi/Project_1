@@ -99,3 +99,17 @@
   removed after each test.
 - Completed roadmap milestone 6. Next: commit and push the authentication
   changes, then inspect the expanded CI run on GitHub.
+
+## 2026-11-18
+
+- Adopted a merge-based workflow: make future changes on the long-lived
+  `feature/ci` branch, push it to GitHub, and merge it into `main` after CI
+  passes.
+- Started broader UI test coverage for the React login and notes interface.
+- Added Vitest and React Testing Library coverage for the initial login screen,
+  switching to sign-up, rendering an authenticated user's notes, and logging
+  out.
+- Updated the root `npm test` command and GitHub Actions step so CI runs both
+  the PostgreSQL-backed API tests and the React interface tests.
+- Verified `npm run build` succeeds. Verified `npm test` passes with two API
+  tests and three React tests against the local Docker PostgreSQL service.

@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev --workspace=@cloud-learning/api\" \"npm run dev --workspace=@cloud-learning/web\"",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspace=@cloud-learning/api",
+    "test": "npm run test --workspaces --if-present",
     "start": "npm run start --workspace=@cloud-learning/api"
   },
   "engines": {
