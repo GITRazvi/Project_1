@@ -28,11 +28,11 @@ continuous integration, and cloud deployment.
   - [x] Add first-party authentication and API coverage.
   - [x] Add broader UI test coverage.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
-  - [x] Add the build-and-test GitHub Actions workflow.
+  - [x] Add the lint, build, and test GitHub Actions workflow.
   - [ ] Push the updated test suite and inspect its GitHub Actions run.
 - [ ] 8. Deploy the application, configure secrets, and document operations.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Push the expanded test suite from `feature/ci` and inspect its GitHub Actions run.
+Push `feature/ci` and inspect its GitHub Actions run before merging into `main`.

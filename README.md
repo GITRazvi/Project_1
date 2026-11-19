@@ -48,6 +48,7 @@ This deletes the local PostgreSQL volume and all saved notes.
 ## Useful commands
 
 ```powershell
+npm run lint   # Check API and web code for common mistakes
 npm run build  # Build both applications
 npm run dev    # Start the API and web app together
 ```
@@ -56,13 +57,14 @@ npm run dev    # Start the API and web app together
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs for pull
 requests targeting `main` and for pushes to `main`. It starts a temporary
-PostgreSQL service, installs dependencies with `npm ci`, builds both
-applications, and runs the API and React interface test suites.
+PostgreSQL service, installs dependencies with `npm ci`, lints the code, builds
+both applications, and runs the API and React interface test suites.
 
 To run the same tests locally while Docker Compose is running:
 
 ```powershell
 $env:DATABASE_URL = "postgresql://cloud_notes:cloud_notes@localhost:5432/cloud_notes"
+npm run lint
 npm test
 ```
 

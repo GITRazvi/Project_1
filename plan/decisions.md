@@ -65,3 +65,9 @@ while avoiding extra branch-management complexity during the learning project.
 Use Vitest, React Testing Library, and JSDOM for fast interface tests. These
 tests mock HTTP responses and verify what a user sees and can do, while the API
 suite remains responsible for exercising the real PostgreSQL-backed behavior.
+
+## 2026-11-19 — Use one shared ESLint configuration
+
+Use a root ESLint flat configuration so the API and web application are checked
+with one `npm run lint` command. Apply Node globals to the API and browser plus
+React Hooks rules to the web app, then run lint before build and test in CI.

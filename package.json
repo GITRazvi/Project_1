@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev --workspace=@cloud-learning/api\" \"npm run dev --workspace=@cloud-learning/web\"",
+    "lint": "eslint apps",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces --if-present",
     "start": "npm run start --workspace=@cloud-learning/api"
@@ -16,6 +17,12 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
+    "globals": "^17.14.0",
+    "typescript-eslint": "^8.73.0"
   }
 }

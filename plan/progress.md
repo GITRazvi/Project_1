@@ -113,3 +113,14 @@
   the PostgreSQL-backed API tests and the React interface tests.
 - Verified `npm run build` succeeds. Verified `npm test` passes with two API
   tests and three React tests against the local Docker PostgreSQL service.
+
+## 2026-11-19
+
+- Started linting setup for the TypeScript API and React client so CI can catch
+  common code issues before the build and test stages.
+- Added a shared ESLint flat configuration for Node API files and browser-based
+  React files, including React Hooks checks. Underscore-prefixed placeholders
+  are allowed for intentionally unused function parameters.
+- Added `npm run lint` and inserted it ahead of build and test stages in GitHub
+  Actions. Verified lint, the workspace build, and all five automated tests
+  pass locally. npm audit reports zero known vulnerabilities.
