@@ -15,12 +15,18 @@ const notesRepository = await PostgresNotesRepository.connect(databaseUrl);
 const app = buildApp({ authRepository, notesRepository });
 
 function sessionCookie(response: { headers: Record<string, string | string[] | undefined> }): string {
+  const header = sessionCookieHeader(response);
+
+  return header.split(';')[0];
+}
+
+function sessionCookieHeader(response: { headers: Record<string, string | string[] | undefined> }): string {
   const header = response.headers['set-cookie'];
   const cookie = Array.isArray(header) ? header[0] : header;
 
   if (!cookie) throw new Error('Expected the response to set a session cookie.');
 
-  return cookie.split(';')[0];
+  return cookie;
 }
 
 beforeAll(async () => app.ready());
@@ -49,6 +55,10 @@ describe('Cloud Notes API', () => {
 
       expect(registered.statusCode).toBe(201);
       expect(registeredUser.email).toBe(email);
+      expect(firstSession).toMatch(/^cloud_notes_session=[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}$/);
+      expect(sessionCookieHeader(registered)).toContain('HttpOnly');
+      expect(sessionCookieHeader(registered)).toContain('SameSite=Lax');
+      expect(sessionCookieHeader(registered)).toContain('Max-Age=604800');
 
       const created = await app.inject({
         method: 'POST',
@@ -69,6 +79,14 @@ describe('Cloud Notes API', () => {
       });
       const listedNotes = JSON.parse(listed.body) as Array<{ id: string }>;
       expect(listedNotes.some((note) => note.id === noteId)).toBe(true);
+
+      const tamperedSession = `${firstSession.slice(0, -1)}${firstSession.endsWith('A') ? 'B' : 'A'}`;
+      const tamperedSessionResponse = await app.inject({
+        method: 'GET',
+        url: '/api/auth/me',
+        headers: { cookie: tamperedSession },
+      });
+      expect(tamperedSessionResponse.statusCode).toBe(401);
 
       const updated = await app.inject({
         method: 'PATCH',
@@ -98,7 +116,7 @@ describe('Cloud Notes API', () => {
         payload: { email, password },
       });
       expect(loggedIn.statusCode).toBe(200);
-      expect(sessionCookie(loggedIn)).toContain('cloud_notes_session=');
+      expect(sessionCookie(loggedIn)).toMatch(/^cloud_notes_session=[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}$/);
     } finally {
       if (userId && noteId) await notesRepository.delete(userId, noteId);
       if (userId) await authRepository.deleteUser(userId);

@@ -78,8 +78,11 @@ deployment secrets.
 Cloud Notes has a simple first-party account system. Create an account from the
 web app with an email address and a password between 8 and 72 characters. The
 API hashes the password with bcrypt before storing it in PostgreSQL. After a
-successful sign-up or login, the API sends an HTTP-only session cookie; the
-browser automatically includes it in later requests, but React cannot read it.
+successful sign-up or login, the API sends an HTTP-only, same-site session
+cookie; the browser automatically includes it in later requests, but React
+cannot read it. The cookie holds an opaque, random session token, while
+PostgreSQL stores only a SHA-256 hash of its secret. A token expires after seven
+days, and production cookies are sent only over HTTPS.
 
 Every note query includes the authenticated user's ID, so users can view and
 change only their own notes. This first version intentionally does not include

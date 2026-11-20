@@ -71,3 +71,10 @@ suite remains responsible for exercising the real PostgreSQL-backed behavior.
 Use a root ESLint flat configuration so the API and web application are checked
 with one `npm run lint` command. Apply Node globals to the API and browser plus
 React Hooks rules to the web app, then run lint before build and test in CI.
+
+## 2026-11-20 — Store hashes of opaque session secrets
+
+Replace UUID-only session cookies with a UUID session ID plus a 256-bit random
+secret. Store only a SHA-256 hash of the secret in PostgreSQL and require both
+parts to authenticate. This keeps sessions revocable in the database while
+preventing a database session row from being replayed as a browser cookie.

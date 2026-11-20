@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import type { AuthRepository, User, UserWithPassword } from './auth.js';
 
@@ -8,6 +8,26 @@ type UserRow = {
   password_hash: string;
   created_at: Date;
 };
+
+type ParsedSessionToken = {
+  sessionId: string;
+  secretHash: string;
+};
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function hashSessionSecret(secret: string): string {
+  return createHash('sha256').update(secret).digest('hex');
+}
+
+function parseSessionToken(sessionToken: string): ParsedSessionToken | null {
+  const [sessionId, secret, ...remainder] = sessionToken.split('.');
+
+  if (!sessionId || !secret || remainder.length > 0 || !uuidPattern.test(sessionId)) return null;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(secret)) return null;
+
+  return { sessionId, secretHash: hashSessionSecret(secret) };
+}
 
 function mapUser(row: UserRow): User {
   return {
@@ -53,28 +73,40 @@ export class PostgresAuthRepository implements AuthRepository {
 
   async createSession(userId: string): Promise<string> {
     const sessionId = randomUUID();
+    const secret = randomBytes(32).toString('base64url');
+    const sessionToken = `${sessionId}.${secret}`;
 
+    await this.pool.query('DELETE FROM sessions WHERE expires_at <= NOW()');
     await this.pool.query(`
-      INSERT INTO sessions (id, user_id, expires_at)
-      VALUES ($1, $2, NOW() + INTERVAL '7 days')
-    `, [sessionId, userId]);
+      INSERT INTO sessions (id, user_id, token_hash, expires_at)
+      VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
+    `, [sessionId, userId, hashSessionSecret(secret)]);
 
-    return sessionId;
+    return sessionToken;
   }
 
-  async findUserBySessionId(sessionId: string): Promise<User | null> {
+  async findUserBySessionToken(sessionToken: string): Promise<User | null> {
+    const parsedToken = parseSessionToken(sessionToken);
+    if (!parsedToken) return null;
+
     const result = await this.pool.query<UserRow>(`
       SELECT users.id, users.email, users.password_hash, users.created_at
       FROM sessions
       INNER JOIN users ON users.id = sessions.user_id
-      WHERE sessions.id = $1 AND sessions.expires_at > NOW()
-    `, [sessionId]);
+      WHERE sessions.id = $1 AND sessions.token_hash = $2 AND sessions.expires_at > NOW()
+    `, [parsedToken.sessionId, parsedToken.secretHash]);
 
     return result.rows[0] ? mapUser(result.rows[0]) : null;
   }
 
-  async deleteSession(sessionId: string): Promise<void> {
-    await this.pool.query('DELETE FROM sessions WHERE id = $1', [sessionId]);
+  async deleteSessionByToken(sessionToken: string): Promise<void> {
+    const parsedToken = parseSessionToken(sessionToken);
+    if (!parsedToken) return;
+
+    await this.pool.query(
+      'DELETE FROM sessions WHERE id = $1 AND token_hash = $2',
+      [parsedToken.sessionId, parsedToken.secretHash],
+    );
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -98,9 +130,14 @@ export class PostgresAuthRepository implements AuthRepository {
       CREATE TABLE IF NOT EXISTS sessions (
         id UUID PRIMARY KEY,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         expires_at TIMESTAMPTZ NOT NULL
       )
     `);
+    await this.pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token_hash TEXT');
+    await this.pool.query('DELETE FROM sessions WHERE token_hash IS NULL');
+    await this.pool.query('ALTER TABLE sessions ALTER COLUMN token_hash SET NOT NULL');
+    await this.pool.query('CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at)');
   }
 }

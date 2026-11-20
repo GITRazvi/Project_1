@@ -124,3 +124,16 @@
 - Added `npm run lint` and inserted it ahead of build and test stages in GitHub
   Actions. Verified lint, the workspace build, and all five automated tests
   pass locally. npm audit reports zero known vulnerabilities.
+
+## 2026-11-20
+
+- Started hardening the first-party session implementation: session cookies
+  will carry cryptographically random opaque tokens while PostgreSQL stores only
+  token hashes, reducing the impact of a database disclosure.
+- Replaced UUID-only cookie values with a session ID plus 256-bit random secret.
+  PostgreSQL now stores only the secret's SHA-256 hash, rejects altered tokens,
+  removes expired sessions during new-session creation, and indexes expiry time.
+- Added a safe schema migration: any legacy session without a token hash is
+  deleted, which intentionally signs out older sessions during this upgrade.
+- Verified lint and the workspace build. Verified all five API and React tests,
+  including cookie attributes, tampered-session rejection, and logout revocation.

@@ -27,6 +27,7 @@ continuous integration, and cloud deployment.
   - [x] Add PostgreSQL-backed API tests.
   - [x] Add first-party authentication and API coverage.
   - [x] Add broader UI test coverage.
+  - [x] Harden database-backed cookie sessions and cover their security behavior.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
   - [x] Add the lint, build, and test GitHub Actions workflow.
   - [ ] Push the updated test suite and inspect its GitHub Actions run.
