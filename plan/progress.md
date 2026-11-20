@@ -99,3 +99,41 @@
   removed after each test.
 - Completed roadmap milestone 6. Next: commit and push the authentication
   changes, then inspect the expanded CI run on GitHub.
+
+## 2026-11-18
+
+- Adopted a merge-based workflow: make future changes on the long-lived
+  `feature/ci` branch, push it to GitHub, and merge it into `main` after CI
+  passes.
+- Started broader UI test coverage for the React login and notes interface.
+- Added Vitest and React Testing Library coverage for the initial login screen,
+  switching to sign-up, rendering an authenticated user's notes, and logging
+  out.
+- Updated the root `npm test` command and GitHub Actions step so CI runs both
+  the PostgreSQL-backed API tests and the React interface tests.
+- Verified `npm run build` succeeds. Verified `npm test` passes with two API
+  tests and three React tests against the local Docker PostgreSQL service.
+
+## 2026-11-19
+
+- Started linting setup for the TypeScript API and React client so CI can catch
+  common code issues before the build and test stages.
+- Added a shared ESLint flat configuration for Node API files and browser-based
+  React files, including React Hooks checks. Underscore-prefixed placeholders
+  are allowed for intentionally unused function parameters.
+- Added `npm run lint` and inserted it ahead of build and test stages in GitHub
+  Actions. Verified lint, the workspace build, and all five automated tests
+  pass locally. npm audit reports zero known vulnerabilities.
+
+## 2026-11-20
+
+- Started hardening the first-party session implementation: session cookies
+  will carry cryptographically random opaque tokens while PostgreSQL stores only
+  token hashes, reducing the impact of a database disclosure.
+- Replaced UUID-only cookie values with a session ID plus 256-bit random secret.
+  PostgreSQL now stores only the secret's SHA-256 hash, rejects altered tokens,
+  removes expired sessions during new-session creation, and indexes expiry time.
+- Added a safe schema migration: any legacy session without a token hash is
+  deleted, which intentionally signs out older sessions during this upgrade.
+- Verified lint and the workspace build. Verified all five API and React tests,
+  including cookie attributes, tampered-session rejection, and logout revocation.

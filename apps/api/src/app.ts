@@ -56,19 +56,20 @@ export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
   app.register(cookie);
   app.register(cors, { origin: true });
 
-  function setSessionCookie(reply: FastifyReply, sessionId: string) {
-    reply.setCookie(sessionCookieName, sessionId, {
+  function setSessionCookie(reply: FastifyReply, sessionToken: string) {
+    reply.setCookie(sessionCookieName, sessionToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: sessionLifetimeSeconds,
+      priority: 'high',
     });
   }
 
   async function currentUser(request: FastifyRequest): Promise<User | null> {
     const sessionId = request.cookies[sessionCookieName];
-    return sessionId ? authRepository.findUserBySessionId(sessionId) : null;
+    return sessionId ? authRepository.findUserBySessionToken(sessionId) : null;
   }
 
   async function requireUser(request: FastifyRequest, reply: FastifyReply): Promise<User | null> {
@@ -124,9 +125,15 @@ export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
   app.post('/api/auth/logout', async (request, reply) => {
     const sessionId = request.cookies[sessionCookieName];
 
-    if (sessionId) await authRepository.deleteSession(sessionId);
+    if (sessionId) await authRepository.deleteSessionByToken(sessionId);
 
-    reply.clearCookie(sessionCookieName, { path: '/' });
+    reply.clearCookie(sessionCookieName, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      priority: 'high',
+    });
     return reply.code(204).send();
   });
 

@@ -48,6 +48,7 @@ This deletes the local PostgreSQL volume and all saved notes.
 ## Useful commands
 
 ```powershell
+npm run lint   # Check API and web code for common mistakes
 npm run build  # Build both applications
 npm run dev    # Start the API and web app together
 ```
@@ -56,26 +57,32 @@ npm run dev    # Start the API and web app together
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs for pull
 requests targeting `main` and for pushes to `main`. It starts a temporary
-PostgreSQL service, installs dependencies with `npm ci`, builds both
-applications, and runs the API test suite.
+PostgreSQL service, installs dependencies with `npm ci`, lints the code, builds
+both applications, and runs the API and React interface test suites.
 
 To run the same tests locally while Docker Compose is running:
 
 ```powershell
 $env:DATABASE_URL = "postgresql://cloud_notes:cloud_notes@localhost:5432/cloud_notes"
+npm run lint
 npm test
 ```
 
-The test suite creates and removes its own notes. Continuous deployment is not
-configured yet because it requires a chosen cloud host and deployment secrets.
+The API test suite creates and removes its own notes; the React tests mock API
+responses to check browser behavior without needing a running API. Continuous
+deployment is not configured yet because it requires a chosen cloud host and
+deployment secrets.
 
 ## Authentication
 
 Cloud Notes has a simple first-party account system. Create an account from the
 web app with an email address and a password between 8 and 72 characters. The
 API hashes the password with bcrypt before storing it in PostgreSQL. After a
-successful sign-up or login, the API sends an HTTP-only session cookie; the
-browser automatically includes it in later requests, but React cannot read it.
+successful sign-up or login, the API sends an HTTP-only, same-site session
+cookie; the browser automatically includes it in later requests, but React
+cannot read it. The cookie holds an opaque, random session token, while
+PostgreSQL stores only a SHA-256 hash of its secret. A token expires after seven
+days, and production cookies are sent only over HTTPS.
 
 Every note query includes the authenticated user's ID, so users can view and
 change only their own notes. This first version intentionally does not include

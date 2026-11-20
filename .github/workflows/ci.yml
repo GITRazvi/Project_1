@@ -45,8 +45,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint applications
+        run: npm run lint
+
       - name: Build applications
         run: npm run build
 
-      - name: Run API tests
+      - name: Run test suites
         run: npm test

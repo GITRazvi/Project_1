@@ -53,3 +53,28 @@ and send the ID only in an HTTP-only, same-site cookie. This is a simple
 first-party session model that keeps password hashes and session identifiers out
 of React state and browser JavaScript. Email verification, password reset, and
 external identity providers remain future work.
+
+## 2026-11-18 — Use one long-lived CI branch for the current learning workflow
+
+Future work will be committed to `feature/ci` and merged into `main` after the
+GitHub Actions workflow passes. This keeps `main` as the reviewed baseline
+while avoiding extra branch-management complexity during the learning project.
+
+## 2026-11-18 — Test React behavior with mocked API responses
+
+Use Vitest, React Testing Library, and JSDOM for fast interface tests. These
+tests mock HTTP responses and verify what a user sees and can do, while the API
+suite remains responsible for exercising the real PostgreSQL-backed behavior.
+
+## 2026-11-19 — Use one shared ESLint configuration
+
+Use a root ESLint flat configuration so the API and web application are checked
+with one `npm run lint` command. Apply Node globals to the API and browser plus
+React Hooks rules to the web app, then run lint before build and test in CI.
+
+## 2026-11-20 — Store hashes of opaque session secrets
+
+Replace UUID-only session cookies with a UUID session ID plus a 256-bit random
+secret. Store only a SHA-256 hash of the secret in PostgreSQL and require both
+parts to authenticate. This keeps sessions revocable in the database while
+preventing a database session row from being replayed as a browser cookie.

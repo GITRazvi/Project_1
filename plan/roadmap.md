@@ -26,13 +26,14 @@ continuous integration, and cloud deployment.
 - [x] 6. Add authentication, validation, and automated tests.
   - [x] Add PostgreSQL-backed API tests.
   - [x] Add first-party authentication and API coverage.
-  - [ ] Add broader UI test coverage.
+  - [x] Add broader UI test coverage.
+  - [x] Harden database-backed cookie sessions and cover their security behavior.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
-  - [x] Add the build-and-test GitHub Actions workflow.
-  - [ ] Commit and push the workflow, then inspect its first GitHub run.
+  - [x] Add the lint, build, and test GitHub Actions workflow.
+  - [ ] Push the updated test suite and inspect its GitHub Actions run.
 - [ ] 8. Deploy the application, configure secrets, and document operations.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Commit and push the authentication changes, then inspect the expanded CI run.
+Push `feature/ci` and inspect its GitHub Actions run before merging into `main`.
