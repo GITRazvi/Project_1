@@ -25,9 +25,7 @@ export class PostgresNotesRepository implements NotesRepository {
   private constructor(private readonly pool: Pool) {}
 
   static async connect(connectionString: string): Promise<PostgresNotesRepository> {
-    const repository = new PostgresNotesRepository(new Pool({ connectionString }));
-    await repository.initialize();
-    return repository;
+    return new PostgresNotesRepository(new Pool({ connectionString }));
   }
 
   async list(userId: string): Promise<Note[]> {
@@ -72,22 +70,5 @@ export class PostgresNotesRepository implements NotesRepository {
 
   close(): Promise<void> {
     return this.pool.end();
-  }
-
-  private async initialize(): Promise<void> {
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS notes (
-        id UUID PRIMARY KEY,
-        user_id UUID NOT NULL,
-        title VARCHAR(120) NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    await this.pool.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS user_id UUID');
-    await this.pool.query(
-      'CREATE INDEX IF NOT EXISTS notes_user_id_created_at_idx ON notes (user_id, created_at DESC)',
-    );
   }
 }

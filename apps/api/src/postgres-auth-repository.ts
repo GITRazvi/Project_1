@@ -42,9 +42,7 @@ export class PostgresAuthRepository implements AuthRepository {
   private constructor(private readonly pool: Pool) {}
 
   static async connect(connectionString: string): Promise<PostgresAuthRepository> {
-    const repository = new PostgresAuthRepository(new Pool({ connectionString }));
-    await repository.initialize();
-    return repository;
+    return new PostgresAuthRepository(new Pool({ connectionString }));
   }
 
   async createUser(email: string, passwordHash: string): Promise<User | null> {
@@ -115,29 +113,5 @@ export class PostgresAuthRepository implements AuthRepository {
 
   close(): Promise<void> {
     return this.pool.end();
-  }
-
-  private async initialize(): Promise<void> {
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
-        email VARCHAR(254) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS sessions (
-        id UUID PRIMARY KEY,
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        token_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        expires_at TIMESTAMPTZ NOT NULL
-      )
-    `);
-    await this.pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token_hash TEXT');
-    await this.pool.query('DELETE FROM sessions WHERE token_hash IS NULL');
-    await this.pool.query('ALTER TABLE sessions ALTER COLUMN token_hash SET NOT NULL');
-    await this.pool.query('CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions (expires_at)');
   }
 }

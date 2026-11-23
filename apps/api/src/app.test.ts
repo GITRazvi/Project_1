@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { runMigrations } from './migrations.js';
 import { PostgresAuthRepository } from './postgres-auth-repository.js';
 import { PostgresNotesRepository } from './postgres-notes-repository.js';
 
@@ -9,6 +10,8 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error('DATABASE_URL must be set before running API tests.');
 }
+
+await runMigrations(databaseUrl);
 
 const authRepository = await PostgresAuthRepository.connect(databaseUrl);
 const notesRepository = await PostgresNotesRepository.connect(databaseUrl);

@@ -137,3 +137,16 @@
   deleted, which intentionally signs out older sessions during this upgrade.
 - Verified lint and the workspace build. Verified all five API and React tests,
   including cookie attributes, tampered-session rejection, and logout revocation.
+
+## 2026-11-23
+
+- Started replacing API startup-time table creation with numbered SQL migrations
+  and a migration runner that records applied files in PostgreSQL.
+- Added `001_initial_schema.sql`, a migration runner with PostgreSQL advisory
+  locking, and the `schema_migrations` table. The runner applies each numbered
+  file once, allowing repeated safe executions.
+- Removed table-creation logic from the API repositories. Docker Compose, CI,
+  and API tests now run migrations before using the database.
+- Verified lint and the workspace build. Applied the migration to the local
+  Docker PostgreSQL database, confirmed the second run made no changes, passed
+  all five tests, and validated the Compose configuration.

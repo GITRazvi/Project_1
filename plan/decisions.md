@@ -78,3 +78,11 @@ Replace UUID-only session cookies with a UUID session ID plus a 256-bit random
 secret. Store only a SHA-256 hash of the secret in PostgreSQL and require both
 parts to authenticate. This keeps sessions revocable in the database while
 preventing a database session row from being replayed as a browser cookie.
+
+## 2026-11-23 — Use numbered SQL migrations with a lightweight runner
+
+Keep schema changes as numbered SQL files in the API repository instead of
+creating tables when the server starts. A small Node runner tracks applied files
+in PostgreSQL and uses an advisory lock so concurrent API instances cannot apply
+the same migration at once. This avoids adding a migration framework while
+making the deployment process explicit and repeatable.
