@@ -17,6 +17,7 @@ complete local environment. If you run the API directly, first set
 ```powershell
 npm install
 $env:DATABASE_URL = "postgresql://cloud_notes:cloud_notes@localhost:5432/cloud_notes"
+npm run migrate
 npm run dev
 ```
 
@@ -35,8 +36,9 @@ Open `http://localhost:5173`. Docker Compose exposes the API at
 `http://localhost:3001`, PostgreSQL at `localhost:5432`, and connects the Vite
 proxy to the API container. The database stores its data in the named
 `postgres_data` volume, so notes survive API and database-container restarts.
-Source changes are mounted into the containers, so the development servers
-reload them. Stop the environment with `Ctrl+C`, then remove its containers with:
+Docker Compose applies database migrations before the API starts. Source changes
+are mounted into the containers, so the development servers reload them. Stop
+the environment with `Ctrl+C`, then remove its containers with:
 
 ```powershell
 docker compose down
@@ -49,6 +51,7 @@ This deletes the local PostgreSQL volume and all saved notes.
 
 ```powershell
 npm run lint   # Check API and web code for common mistakes
+npm run migrate # Apply new database schema changes
 npm run build  # Build both applications
 npm run dev    # Start the API and web app together
 ```
@@ -58,7 +61,8 @@ npm run dev    # Start the API and web app together
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs for pull
 requests targeting `main` and for pushes to `main`. It starts a temporary
 PostgreSQL service, installs dependencies with `npm ci`, lints the code, builds
-both applications, and runs the API and React interface test suites.
+both applications, applies database migrations, and runs the API and React
+interface test suites.
 
 To run the same tests locally while Docker Compose is running:
 
@@ -72,6 +76,18 @@ The API test suite creates and removes its own notes; the React tests mock API
 responses to check browser behavior without needing a running API. Continuous
 deployment is not configured yet because it requires a chosen cloud host and
 deployment secrets.
+
+## Database migrations
+
+The API keeps versioned SQL files in `apps/api/migrations`. `npm run migrate`
+creates the `schema_migrations` record table, runs each unapplied numbered file
+once, and records it. It is safe to run repeatedly: a second run makes no
+changes.
+
+To change the database later, add a new file such as
+`002_add_note_tags.sql`; do not edit a migration that has already been applied
+to a shared environment. Migrations run before the Docker Compose API starts
+and as a dedicated CI step.
 
 ## Authentication
 

@@ -23,6 +23,7 @@ continuous integration, and cloud deployment.
 - [x] 5. Add PostgreSQL and run the complete stack locally with Docker Compose.
   - [x] Containerize the web and API development services.
   - [x] Add PostgreSQL and connect the API to it.
+  - [x] Add versioned database migrations for consistent schema updates.
 - [x] 6. Add authentication, validation, and automated tests.
   - [x] Add PostgreSQL-backed API tests.
   - [x] Add first-party authentication and API coverage.

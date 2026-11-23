@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "migrate": "tsx src/migrate.ts",
     "build": "tsc --project tsconfig.json",
     "test": "vitest run",
     "start": "node dist/server.js"
