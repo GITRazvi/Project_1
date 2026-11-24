@@ -47,11 +47,34 @@ docker compose down
 For a completely fresh local database, run `docker compose down --volumes`.
 This deletes the local PostgreSQL volume and all saved notes.
 
+## Run the production containers locally
+
+The production setup builds the React app once, serves it with Nginx, and runs
+the compiled API without source mounts or file watchers. It uses a separate
+Compose project and database volume from development.
+
+```powershell
+Copy-Item .env.production.example .env.production
+# Edit .env.production and replace POSTGRES_PASSWORD.
+npm run prod
+```
+
+Open `http://localhost:8080` to check the production-style web container and
+API proxy. This local address does not use HTTPS, so login cookies are correctly
+rejected: production sessions are marked `Secure` and work only behind an HTTPS
+reverse proxy or cloud load balancer. Use the development setup for local login
+testing. Stop the production containers while preserving their database with:
+
+```powershell
+docker compose --env-file .env.production --file compose.production.yaml down
+```
+
 ## Useful commands
 
 ```powershell
 npm run lint   # Check API and web code for common mistakes
 npm run migrate # Apply new database schema changes
+npm run prod    # Build and start production-style containers
 npm run build  # Build both applications
 npm run dev    # Start the API and web app together
 ```

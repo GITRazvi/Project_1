@@ -150,3 +150,18 @@
 - Verified lint and the workspace build. Applied the migration to the local
   Docker PostgreSQL database, confirmed the second run made no changes, passed
   all five tests, and validated the Compose configuration.
+
+## 2026-11-24
+
+- Started production container setup: build immutable API and web images without
+  source mounts or development watchers, while keeping the existing Compose file
+  for local development.
+- Added a multi-stage production Dockerfile: a non-root compiled Node API image
+  runs migrations before startup, while an Nginx image serves the built React
+  app and proxies `/api` internally to the API container.
+- Added `compose.production.yaml` and `.env.production.example`. Production
+  services have no source mounts, do not expose PostgreSQL publicly, and use a
+  separate Compose project from development.
+- Verified lint, builds, production Compose validation, and a full isolated
+  production-stack run. The web app and proxied API health endpoint both
+  returned HTTP 200; the temporary test containers and volume were removed.

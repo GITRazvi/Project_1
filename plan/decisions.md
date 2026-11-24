@@ -86,3 +86,11 @@ creating tables when the server starts. A small Node runner tracks applied files
 in PostgreSQL and uses an advisory lock so concurrent API instances cannot apply
 the same migration at once. This avoids adding a migration framework while
 making the deployment process explicit and repeatable.
+
+## 2026-11-24 — Build separate production API and web images
+
+Use a multi-stage Node build to compile both applications, then publish a small
+Node API image and an Nginx web image. Nginx serves the static React build and
+proxies API requests over the private Compose network, giving the browser one
+application origin. Keep production Compose separate from the source-mounted
+development services and require HTTPS for production session cookies.
