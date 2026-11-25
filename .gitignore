@@ -3,5 +3,7 @@ dist/
 coverage/
 .env
 .env.local
+.env.production
+caddy-local-root.crt
 *.log
 .DS_Store

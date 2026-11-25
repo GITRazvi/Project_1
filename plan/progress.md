@@ -165,3 +165,27 @@
 - Verified lint, builds, production Compose validation, and a full isolated
   production-stack run. The web app and proxied API health endpoint both
   returned HTTP 200; the temporary test containers and volume were removed.
+- Installed and verified Caddy v2.11.9 through Windows Package Manager as the
+  local HTTPS reverse-proxy tool for the planned home LAN deployment.
+- Started moving Caddy into the production Docker Compose stack so HTTPS and
+  certificate data travel with the application configuration.
+- Added the official Caddy v2.11.9 Alpine container as the only production
+  service publishing ports 80 and 443. The Nginx web container, API, and
+  PostgreSQL now remain private to the Docker network.
+- Configured Caddy with an internal certificate for the reserved LAN IP
+  `192.168.68.52`; its persistent volumes retain the local CA and certificate.
+- Verified the full isolated stack: HTTP redirects to HTTPS and the Caddy HTTPS
+  route successfully returned the proxied API health response. Removed the
+  temporary containers, network, and volumes after verification.
+
+## 2026-11-25
+
+- Started preparing the persistent home-LAN stack and ensuring its environment
+  file cannot be committed accidentally.
+- Created the ignored local production environment file with a generated database
+  password and started the production Compose stack. Exported Caddy's public
+  root certificate; Windows trust-store installation remains unconfirmed.
+- Set Caddy's default TLS server name to the configured LAN IP for clients that
+  omit SNI. Verified the API health endpoint over HTTPS with certificate checking
+  against the exported root certificate. Browser login and LAN-device access
+  remain to be tested after certificate trust is configured.
