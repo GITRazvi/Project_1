@@ -1,0 +1,8 @@
+{
+	default_sni {$CADDY_HOST}
+}
+
+https://{$CADDY_HOST} {
+  tls internal
+  reverse_proxy web:80
+}

@@ -33,8 +33,10 @@ continuous integration, and cloud deployment.
   - [x] Add the lint, build, and test GitHub Actions workflow.
   - [ ] Push the updated test suite and inspect its GitHub Actions run.
 - [ ] 8. Deploy the application, configure secrets, and document operations.
+  - [x] Create production API and web container images.
+  - [x] Add and configure Caddy as the HTTPS reverse-proxy container for home LAN hosting.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Push `feature/ci` and inspect its GitHub Actions run before merging into `main`.
+Start the home production stack with a real `.env.production` file and trust its Caddy certificate on LAN client devices.

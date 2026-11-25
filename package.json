@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev --workspace=@cloud-learning/api\" \"npm run dev --workspace=@cloud-learning/web\"",
     "migrate": "npm run migrate --workspace=@cloud-learning/api",
+    "prod": "docker compose --env-file .env.production --file compose.production.yaml up --build",
     "lint": "eslint apps",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces --if-present",

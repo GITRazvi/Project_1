@@ -86,3 +86,31 @@ creating tables when the server starts. A small Node runner tracks applied files
 in PostgreSQL and uses an advisory lock so concurrent API instances cannot apply
 the same migration at once. This avoids adding a migration framework while
 making the deployment process explicit and repeatable.
+
+## 2026-11-24 — Build separate production API and web images
+
+Use a multi-stage Node build to compile both applications, then publish a small
+Node API image and an Nginx web image. Nginx serves the static React build and
+proxies API requests over the private Compose network, giving the browser one
+application origin. Keep production Compose separate from the source-mounted
+development services and require HTTPS for production session cookies.
+
+## 2026-11-24 — Use Caddy for home LAN HTTPS
+
+Use Caddy as the home-server reverse proxy in front of the production web
+container. It will provide the HTTPS endpoint required by secure session cookies
+while forwarding traffic to containers on the local machine. Internet exposure,
+router port forwarding, and public DNS remain intentionally out of scope.
+
+## 2026-11-24 — Run Caddy inside the production Compose stack
+
+Run the official Caddy container as the only service that publishes ports 80
+and 443. Persist Caddy's `/data` volume because it contains the internal CA and
+certificates, and use an internal CA for the reserved home-LAN IP address. The
+Windows Caddy installation remains available for local inspection, but the
+containerized configuration is the deployed path.
+
+## 2026-11-25 — Support HTTPS clients connecting by LAN IP
+
+Set Caddy's default TLS server name to the configured LAN address so clients
+that omit SNI for IP addresses can still receive the correct certificate.

@@ -47,11 +47,47 @@ docker compose down
 For a completely fresh local database, run `docker compose down --volumes`.
 This deletes the local PostgreSQL volume and all saved notes.
 
+## Run the production containers locally
+
+The production setup builds the React app once, serves it with Nginx, and runs
+the compiled API without source mounts or file watchers. A Caddy container is
+the only public-facing service: it provides HTTPS and proxies traffic to Nginx.
+The production stack uses a separate Compose project and database volume from
+development.
+
+```powershell
+Copy-Item .env.production.example .env.production
+# Edit .env.production and replace POSTGRES_PASSWORD.
+npm run prod
+```
+
+Open `https://` followed by the `CADDY_HOST` value from `.env.production`, such
+as `https://192.168.68.52`. Caddy uses an internal HTTPS certificate for LAN
+hosting, so devices must trust Caddy's root certificate before browsers accept
+the connection and secure login cookies work.
+
+After the stack has started, export the certificate on this Windows PC:
+
+```powershell
+docker compose --env-file .env.production --file compose.production.yaml cp caddy:/data/caddy/pki/authorities/local/root.crt .\caddy-local-root.crt
+Import-Certificate -FilePath .\caddy-local-root.crt -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+Import the same exported certificate into the trust store of each LAN device
+that will use the app. This setup is LAN-only: do not add router port forwarding
+for ports 80 or 443. Stop the production containers while preserving their
+database and Caddy certificate data with:
+
+```powershell
+docker compose --env-file .env.production --file compose.production.yaml down
+```
+
 ## Useful commands
 
 ```powershell
 npm run lint   # Check API and web code for common mistakes
 npm run migrate # Apply new database schema changes
+npm run prod    # Build and start production-style containers
 npm run build  # Build both applications
 npm run dev    # Start the API and web app together
 ```
