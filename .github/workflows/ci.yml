@@ -56,3 +56,32 @@ jobs:
 
       - name: Run test suites
         run: npm test
+
+  publish-images:
+    name: Publish production images
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out tested commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Log in to GitHub Container Registry
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Build and publish images
+        shell: bash
+        run: |
+          image_base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker build --file Dockerfile.production --target api-production --tag "${image_base}-api:${GITHUB_SHA}" .
+          docker build --file Dockerfile.production --target web-production --tag "${image_base}-web:${GITHUB_SHA}" .
+          docker push "${image_base}-api:${GITHUB_SHA}"
+          docker push "${image_base}-web:${GITHUB_SHA}"
+          echo "Published ${image_base}-api:${GITHUB_SHA} and ${image_base}-web:${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"

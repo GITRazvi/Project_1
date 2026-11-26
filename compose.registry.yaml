@@ -1,0 +1,10 @@
+# Use with compose.production.yaml to deploy published images without local builds.
+services:
+  api:
+    build: !reset null
+    image: ${IMAGE_BASE:?Set IMAGE_BASE to the lowercase GHCR repository path}-api:${IMAGE_VERSION:?Set IMAGE_VERSION to a published commit SHA}
+    pull_policy: always
+  web:
+    build: !reset null
+    image: ${IMAGE_BASE:?Set IMAGE_BASE to the lowercase GHCR repository path}-web:${IMAGE_VERSION:?Set IMAGE_VERSION to a published commit SHA}
+    pull_policy: always

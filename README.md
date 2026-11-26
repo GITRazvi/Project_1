@@ -109,9 +109,47 @@ npm test
 ```
 
 The API test suite creates and removes its own notes; the React tests mock API
-responses to check browser behavior without needing a running API. Continuous
-deployment is not configured yet because it requires a chosen cloud host and
-deployment secrets.
+responses to check browser behavior without needing a running API. After a push
+to `main` passes these checks, a second job builds and publishes API and web
+images to GitHub Container Registry (GHCR). Each is tagged with the full commit
+SHA. Pull requests run checks but do not publish images; deployment to the home
+server remains manual.
+
+## Deploy a published image version at home
+
+After merging, open GitHub Actions and wait for the **Publish production images**
+job to succeed. Its job summary lists both image names and their shared full
+commit SHA. On the home server, update the repository files to the matching
+commit, including `compose.registry.yaml`, `compose.production.yaml`, and the
+Caddy configuration. Keep the existing `.env.production` file and Docker
+volumes; do not overwrite them.
+
+If the packages are private, first authenticate Docker to GHCR as an account
+with permission to read them. GitHub supports a personal access token (classic)
+with `read:packages`; keep the token private and use `--password-stdin` as
+described in [GitHub's registry authentication guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
+
+In PowerShell, replace the example SHA with the full SHA from the successful
+publishing job. The image base must be lowercase:
+
+```powershell
+$env:IMAGE_BASE = 'ghcr.io/gitrazvi/project_1'
+$env:IMAGE_VERSION = '<full-published-commit-sha>'
+docker compose --env-file .env.production -f compose.production.yaml -f compose.registry.yaml pull api web
+docker compose --env-file .env.production -f compose.production.yaml -f compose.registry.yaml up -d --no-build --pull never
+```
+
+Pull both images successfully before running the second command. Docker replaces
+the API and web containers while keeping the existing database and Caddy
+volumes. The API runs pending migrations before starting. Verify the app and
+status screen afterward. Record the deployed SHA: to return to an earlier
+version, select its SHA and repeat these commands **only after checking database
+migration compatibility**. Rolling back images does not undo migrations.
+
+Image publishing can be disabled by repository or package permissions, and new
+GHCR packages may be private. Check the Actions job and package settings if the
+first publish or pull fails. The workflow does not log in to or update your home
+server automatically.
 
 ## Database migrations
 
@@ -139,6 +177,32 @@ days, and production cookies are sent only over HTTPS.
 Every note query includes the authenticated user's ID, so users can view and
 change only their own notes. This first version intentionally does not include
 email verification, password reset, multi-factor authentication, or OAuth.
+
+Login accepts at most 10 attempts per 15 minutes per direct connection address;
+all attempts count, including successful ones. Further attempts return HTTP 429
+with a retry time. In production, requests arrive through the web proxy, so LAN
+users currently share the same limit. Counters are held in API process memory,
+reset on restart, and are not shared across multiple API instances. This is a
+basic safeguard, not complete protection against distributed attacks.
+
+## Service status and logs
+
+Use **Check status** on the login or notes screen to check whether the API is
+reachable and whether it can run a PostgreSQL query. This is an on-demand
+snapshot; a loaded web page does not guarantee that its server is still running.
+The API's `/api/health` endpoint checks that the process responds, while
+`/api/status` also checks database connectivity and returns HTTP 503 if that
+check fails.
+
+The API writes structured JSON request logs and a warning when a database status
+check fails. View production logs with:
+
+```powershell
+docker compose --env-file .env.production --file compose.production.yaml logs --tail=100 api
+```
+
+Request bodies are not logged by default; cookie and authorization headers are
+also configured for redaction. Avoid putting secrets into URLs or log messages.
 
 ## Structure
 

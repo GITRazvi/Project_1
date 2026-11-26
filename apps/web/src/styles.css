@@ -346,3 +346,7 @@ button:not(:disabled):hover {
     justify-items: start;
   }
 }
+.service-status { margin-top: 1.5rem; padding: 1.25rem; }
+.service-status h2 { margin-top: 0; }
+.service-status p { margin: 0.5rem 0; }
+.service-status .status-hint { font-size: 0.85rem; opacity: 0.75; }

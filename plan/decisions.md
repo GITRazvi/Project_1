@@ -114,3 +114,25 @@ containerized configuration is the deployed path.
 
 Set Caddy's default TLS server name to the configured LAN address so clients
 that omit SNI for IP addresses can still receive the correct certificate.
+
+## 2026-11-26 — Limit login requests by direct connection address
+
+Use an in-memory limit of 10 login requests per 15 minutes, including successful
+requests. The API does not trust client-supplied forwarded IP headers. Behind the
+current proxy, users share the limit; counters reset on restart and are not
+shared across API instances. A multi-instance deployment will need a shared
+store and explicitly configured trusted proxies.
+
+## 2026-11-26 — Separate liveness from service status
+
+Keep `/api/health` independent of PostgreSQL for container liveness. Add an
+on-demand `/api/status` check for database connectivity and report failures
+without exposing database errors. Use the existing JSON logger with sensitive
+header redaction and structured status-check warnings.
+
+## 2026-11-26 — Publish immutable-version image pairs after CI
+
+After the main-branch build-and-test job passes, publish API and web images to
+GHCR with the full tested commit SHA. Keep deployment manual using a Compose
+override so the home server owner chooses the version and timing; do not assume
+rolling back containers reverses database migrations.
