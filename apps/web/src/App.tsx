@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import ServiceStatus from './ServiceStatus';
 
 type Note = {
   id: string;
@@ -259,6 +260,7 @@ export default function App() {
             {authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Log in'}
           </button>
         </section>
+        <ServiceStatus />
       </main>
     );
   }
@@ -324,6 +326,7 @@ export default function App() {
           )}
         </section>
       </div>
+      <ServiceStatus />
     </main>
   );
 }

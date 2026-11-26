@@ -68,6 +68,11 @@ export class PostgresNotesRepository implements NotesRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async checkConnection(): Promise<void> {
+    const query = { text: 'SELECT 1', query_timeout: 3000 };
+    await this.pool.query(query);
+  }
+
   close(): Promise<void> {
     return this.pool.end();
   }

@@ -1,6 +1,7 @@
 import { compare, hash } from 'bcryptjs';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import type { AuthRepository, User } from './auth.js';
 import type { CreateNoteInput, NotesRepository } from './notes.js';
@@ -25,6 +26,7 @@ type NoteParams = {
 type BuildAppOptions = {
   notesRepository: NotesRepository;
   authRepository: AuthRepository;
+  checkDatabase: () => Promise<void>;
 };
 
 function validateCredentials(body: CredentialsBody): { email: string; password: string } | null {
@@ -50,11 +52,12 @@ function validateCreateNote(body: CreateNoteBody): CreateNoteInput | null {
   return { title, content };
 }
 
-export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
-  const app = Fastify({ logger: true });
+export function buildApp({ notesRepository, authRepository, checkDatabase }: BuildAppOptions) {
+  const app = Fastify({ logger: { redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'] } });
 
   app.register(cookie);
   app.register(cors, { origin: true });
+  app.register(rateLimit, { global: false });
 
   function setSessionCookie(reply: FastifyReply, sessionToken: string) {
     reply.setCookie(sessionCookieName, sessionToken, {
@@ -86,6 +89,17 @@ export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
     timestamp: new Date().toISOString(),
   }));
 
+  app.get('/api/status', async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    try {
+      await checkDatabase();
+      return { api: 'available', database: 'available' };
+    } catch {
+      request.log.warn({ event: 'database_status_check_failed', service: 'database' }, 'Database status check failed');
+      return reply.code(503).send({ api: 'available', database: 'unavailable' });
+    }
+  });
+
   app.post<{ Body: CredentialsBody }>('/api/auth/register', async (request, reply) => {
     const credentials = validateCredentials(request.body ?? {});
 
@@ -106,7 +120,9 @@ export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
     return reply.code(201).send(user);
   });
 
-  app.post<{ Body: CredentialsBody }>('/api/auth/login', async (request, reply) => {
+  app.after(() => app.post<{ Body: CredentialsBody }>('/api/auth/login', {
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+  }, async (request, reply) => {
     const credentials = validateCredentials(request.body ?? {});
 
     if (!credentials) return reply.code(401).send({ message: 'Email or password is incorrect.' });
@@ -120,7 +136,7 @@ export function buildApp({ notesRepository, authRepository }: BuildAppOptions) {
 
     setSessionCookie(reply, await authRepository.createSession(user.id));
     return { id: user.id, email: user.email, createdAt: user.createdAt };
-  });
+  }));
 
   app.post('/api/auth/logout', async (request, reply) => {
     const sessionId = request.cookies[sessionCookieName];

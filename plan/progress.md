@@ -189,3 +189,26 @@
   omit SNI. Verified the API health endpoint over HTTPS with certificate checking
   against the exported root certificate. Browser login and LAN-device access
   remain to be tested after certificate trust is configured.
+
+## 2026-11-26
+
+- The user confirmed access from the host and another LAN device.
+- Started login rate limiting and PostgreSQL-backed security tests for expired
+  sessions and cross-user note access.
+- Limited login to 10 requests per 15 minutes per direct connection address;
+  requests through the production proxy share one limit. Added tests for HTTP
+  429, expired sessions, and another user's attempted list, edit, and deletion.
+- Verified all four PostgreSQL-backed API tests and all three React tests pass.
+- Started adding an on-demand status view and database readiness check while
+  preserving the existing API liveness endpoint.
+- Added `/api/status` with a PostgreSQL query, a status panel on the login and
+  notes screens, and structured database-failure warnings with sensitive header
+  redaction. The existing `/api/health` remains a process-only liveness check.
+- Verified lint, builds, five API tests and five web tests, including healthy,
+  database-failure, and API-unreachable status behavior.
+- Started CI image publishing and a manual, version-selected home deployment
+  process. Existing security and operations changes remain in the worktree.
+- Added a CI job that publishes API and web images to GHCR using the tested main
+  commit's full SHA, plus a Compose override and manual deployment instructions.
+  Both production image targets build locally; registry publishing requires the
+  workflow to be pushed and run on GitHub before it can be verified.

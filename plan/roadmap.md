@@ -29,14 +29,17 @@ continuous integration, and cloud deployment.
   - [x] Add first-party authentication and API coverage.
   - [x] Add broader UI test coverage.
   - [x] Harden database-backed cookie sessions and cover their security behavior.
+  - [x] Limit login attempts and test expired sessions and note ownership.
 - [ ] 7. Add GitHub Actions for linting, tests, and builds.
   - [x] Add the lint, build, and test GitHub Actions workflow.
   - [ ] Push the updated test suite and inspect its GitHub Actions run.
 - [ ] 8. Deploy the application, configure secrets, and document operations.
   - [x] Create production API and web container images.
   - [x] Add and configure Caddy as the HTTPS reverse-proxy container for home LAN hosting.
+  - [x] Add service status checks and structured operational logging.
+  - [x] Publish versioned production images after successful CI and document manual deployment.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Start the home production stack with a real `.env.production` file and trust its Caddy certificate on LAN client devices.
+Push and merge the image publishing workflow, then verify its first GitHub run before a manual home-server deployment.
