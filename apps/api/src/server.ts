@@ -11,7 +11,7 @@ try {
 
   const authRepository = await PostgresAuthRepository.connect(databaseUrl);
   const notesRepository = await PostgresNotesRepository.connect(databaseUrl);
-  const app = buildApp({ notesRepository, authRepository, checkDatabase: () => notesRepository.checkConnection() });
+  const app = buildApp({ notesRepository, authRepository, checkDatabase: () => notesRepository.checkConnection(), trustedProxy: process.env.TRUSTED_PROXY });
   app.addHook('onClose', async () => {
     await notesRepository.close();
     await authRepository.close();

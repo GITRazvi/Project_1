@@ -212,3 +212,28 @@
   commit's full SHA, plus a Compose override and manual deployment instructions.
   Both production image targets build locally; registry publishing requires the
   workflow to be pushed and run on GitHub before it can be verified.
+
+## 2026-11-27
+
+- Started database backup and safe restore tooling, trusted-proxy login limits,
+  and note search with tags. No VPN or additional monitoring is in scope.
+- Added a versioned migration and API/UI support for note tags, with client-side
+  search across the signed-in user's loaded titles, content, and tags.
+- Added backup and restore-to-new-database scripts. Verified a test archive and
+  restored record using an isolated PostgreSQL container and removed its test
+  volume afterward; the ignored test archive remains under `backups/test/`.
+- Isolated the production proxy chain on two Docker networks with fixed trusted
+  proxy addresses. API tests distinguish forwarded clients and reject spoofed
+  headers from untrusted peers; an isolated full stack also rejected a spoofed
+  header across eleven requests. Real two-device address preservation on Docker
+  Desktop remains unverified and must be checked after deployment.
+- Verified lint, build, and all eleven API and web tests. The migration was
+  applied to the development database; the running home stack was not updated.
+- Started an automatic local backup service that runs on startup and every 40
+  days; the user chose storage on this PC rather than a separate drive.
+- Added the production Compose backup service with a 40-day interval, a backup
+  at each service start, archive validation, one-hour retries, and no automatic
+  deletion. Archives are stored in the Git-ignored local `backups/` directory.
+- Verified repeated backups, outage retries, and recovery with a shortened
+  interval against an isolated PostgreSQL container. Removed its disposable
+  containers and database volume; the ignored test archives remain locally.

@@ -178,12 +178,68 @@ Every note query includes the authenticated user's ID, so users can view and
 change only their own notes. This first version intentionally does not include
 email verification, password reset, multi-factor authentication, or OAuth.
 
-Login accepts at most 10 attempts per 15 minutes per direct connection address;
-all attempts count, including successful ones. Further attempts return HTTP 429
-with a retry time. In production, requests arrive through the web proxy, so LAN
-users currently share the same limit. Counters are held in API process memory,
+Login accepts at most 10 attempts per 15 minutes per client address; all
+attempts count, including successful ones. Further attempts return HTTP 429 with
+a retry time. The production proxy chain uses dedicated Docker networks and
+trusts only the fixed addresses of the adjacent proxies. Caddy replaces any
+client-supplied forwarding header; Nginx forwards the verified client address.
+Docker Desktop networking may obscure client addresses on some systems, so test
+from two devices after deployment. Counters are held in API process memory,
 reset on restart, and are not shared across multiple API instances. This is a
-basic safeguard, not complete protection against distributed attacks.
+basic safeguard, not complete protection against distributed attacks. If the
+proxy topology or network ranges change, update all three trusted-address
+settings together; never enable unrestricted proxy trust.
+
+## Search and tags
+
+Add up to ten comma-separated tags to each note (30 characters per tag). Tags
+are normalized to lowercase. Search filters your loaded notes by title, content,
+or tag without sending a separate search query to the server. Migration
+`002_note_tags.sql` preserves existing notes and gives them an empty tag list.
+
+## Backup and restore a copy
+
+The production Compose stack includes a backup service. It creates a local
+database archive in `backups/` when the service starts, then every 40 days
+while it remains running. If a backup fails, it logs the failure and retries
+after one hour. Completed archives are not automatically deleted.
+
+The service starts with the production stack; Docker Desktop must be running.
+If the PC is asleep or off, no backup can run. When the service starts again it
+creates another backup immediately. Check its recent activity with:
+
+```powershell
+docker compose --env-file .env.production -f compose.production.yaml logs --tail=100 backup
+```
+
+The default `backups/` folder is on this PC. A drive failure can therefore
+affect both the database and these backups. Monitor disk space, protect access
+to the files, and periodically test restoration.
+
+In PowerShell 7, with the production database running, create a backup:
+
+```powershell
+./scripts/backup-database.ps1
+```
+
+This writes a dated PostgreSQL custom-format archive under `backups/` (ignored
+by Git). It contains notes, account data and session records; protect it and
+store a copy off this PC. It does not include `.env.production` or Caddy's
+certificate authority; preserve those separately and securely.
+
+To test a backup, restore it into a **new** database in the same PostgreSQL
+container (substitute the actual backup file):
+
+```powershell
+./scripts/restore-database-copy.ps1 -BackupFile 'backups/cloud-notes-example.dump' -NewDatabase restored_notes
+```
+
+The command refuses to overwrite an existing database and does not switch the
+running app. If restoration fails, the newly created database may be incomplete.
+Switching the app to a restored database is a separate manual recovery operation;
+verify the copy and plan the cutover before changing the live database. Never use
+`docker compose down --volumes` on the production stack unless you intend to
+delete its database and Caddy certificate authority.
 
 ## Service status and logs
 

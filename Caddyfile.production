@@ -4,5 +4,7 @@
 
 https://{$CADDY_HOST} {
   tls internal
-  reverse_proxy web:80
+  reverse_proxy web:80 {
+    header_up X-Forwarded-For {remote_host}
+  }
 }

@@ -5,6 +5,7 @@ type Note = {
   id: string;
   title: string;
   content: string;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -46,6 +47,8 @@ export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [tags, setTags] = useState('');
+  const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -100,6 +103,7 @@ export default function App() {
     setEditingNote(null);
     setTitle('');
     setContent('');
+    setTags('');
     setSubmitError(null);
   }
 
@@ -107,6 +111,7 @@ export default function App() {
     setEditingNote(note);
     setTitle(note.title);
     setContent(note.content);
+    setTags((note.tags ?? []).join(', '));
     setSubmitError(null);
     setSuccessMessage(null);
   }
@@ -139,6 +144,7 @@ export default function App() {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
     setNotes([]);
+    setSearch('');
     setLoadError(null);
     setSuccessMessage(null);
     resetNoteForm();
@@ -163,7 +169,7 @@ export default function App() {
       const response = await fetch(editingNote ? `/api/notes/${editingNote.id}` : '/api/notes', {
         method: editingNote ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmedTitle, content: trimmedContent }),
+        body: JSON.stringify({ title: trimmedTitle, content: trimmedContent, tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean) }),
       });
 
       if (!response.ok) throw new Error(await getErrorMessage(response));
@@ -213,6 +219,9 @@ export default function App() {
   if (isCheckingSession) {
     return <main className="auth-shell"><p className="state card">Checking your session…</p></main>;
   }
+
+  const query = search.trim().toLowerCase();
+  const visibleNotes = notes.filter((note) => [note.title, note.content, ...(note.tags ?? [])].some((value) => value.toLowerCase().includes(query)));
 
   if (!user) {
     return (
@@ -291,6 +300,9 @@ export default function App() {
             <input id="note-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="What do you want to remember?" disabled={isSaving} required />
             <label htmlFor="note-content">Content</label>
             <textarea id="note-content" value={content} onChange={(event) => setContent(event.target.value)} maxLength={10_000} placeholder="Write your note here…" rows={7} disabled={isSaving} required />
+            <label htmlFor="note-tags">Tags (comma-separated)</label>
+            <input id="note-tags" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="cloud, learning" disabled={isSaving} />
+            <p className="status-hint">Up to 10 tags, 30 characters each.</p>
             {submitError && <p className="message error" role="alert">{submitError}</p>}
             {successMessage && <p className="message success" role="status">{successMessage}</p>}
             <div className="form-actions">
@@ -305,16 +317,20 @@ export default function App() {
             <div><p className="section-label">Your collection</p><h2 id="your-notes-heading">Notes</h2></div>
             {!isLoading && !loadError && <span className="note-count">{notes.length}</span>}
           </div>
+          <label htmlFor="note-search">Search notes and tags</label>
+          <input id="note-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search your notes" />
           {isLoading && <p className="state card">Loading notes…</p>}
           {loadError && <div className="state card error-state" role="alert"><p>We could not load your notes: {loadError}</p><button type="button" className="secondary-button" onClick={() => void loadNotes()}>Try again</button></div>}
           {!isLoading && !loadError && notes.length === 0 && <p className="state card">No notes yet. Your first note will appear here.</p>}
-          {!isLoading && !loadError && notes.length > 0 && (
+          {!isLoading && !loadError && notes.length > 0 && visibleNotes.length === 0 && <p className="state card">No notes match your search.</p>}
+          {!isLoading && !loadError && visibleNotes.length > 0 && (
             <ol className="notes-list">
-              {notes.map((note) => (
+              {visibleNotes.map((note) => (
                 <li key={note.id} className="note-card card">
                   <article>
                     <p className="note-date">Created {formatDate(note.createdAt)}</p>
                     <h3>{note.title}</h3><p className="note-content">{note.content}</p>
+                    {(note.tags ?? []).length > 0 && <p>Tags: {note.tags.join(', ')}</p>}
                     <div className="note-actions">
                       <button type="button" className="secondary-button" onClick={() => startEditing(note)} disabled={isSaving || deletingId === note.id}>Edit</button>
                       <button type="button" className="delete-button" onClick={() => void handleDelete(note)} disabled={isSaving || deletingId === note.id}>{deletingId === note.id ? 'Deleting…' : 'Delete'}</button>
