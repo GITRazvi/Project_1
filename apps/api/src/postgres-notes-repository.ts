@@ -6,6 +6,7 @@ type NoteRow = {
   id: string;
   title: string;
   content: string;
+  tags: string[];
   created_at: Date;
   updated_at: Date;
 };
@@ -15,6 +16,7 @@ function mapNote(row: NoteRow): Note {
     id: row.id,
     title: row.title,
     content: row.content,
+    tags: row.tags,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -30,7 +32,7 @@ export class PostgresNotesRepository implements NotesRepository {
 
   async list(userId: string): Promise<Note[]> {
     const result = await this.pool.query<NoteRow>(`
-      SELECT id, title, content, created_at, updated_at
+      SELECT id, title, content, tags, created_at, updated_at
       FROM notes
       WHERE user_id = $1
       ORDER BY created_at DESC, id DESC
@@ -41,10 +43,10 @@ export class PostgresNotesRepository implements NotesRepository {
 
   async create(userId: string, input: CreateNoteInput): Promise<Note> {
     const result = await this.pool.query<NoteRow>(`
-      INSERT INTO notes (id, user_id, title, content)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, title, content, created_at, updated_at
-    `, [randomUUID(), userId, input.title, input.content]);
+      INSERT INTO notes (id, user_id, title, content, tags)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, title, content, tags, created_at, updated_at
+    `, [randomUUID(), userId, input.title, input.content, input.tags ?? []]);
 
     return mapNote(result.rows[0]);
   }
@@ -52,10 +54,10 @@ export class PostgresNotesRepository implements NotesRepository {
   async update(userId: string, id: string, input: CreateNoteInput): Promise<Note | null> {
     const result = await this.pool.query<NoteRow>(`
       UPDATE notes
-      SET title = $3, content = $4, updated_at = NOW()
+      SET title = $3, content = $4, tags = COALESCE($5::text[], tags), updated_at = NOW()
       WHERE id = $1 AND user_id = $2
-      RETURNING id, title, content, created_at, updated_at
-    `, [id, userId, input.title, input.content]);
+      RETURNING id, title, content, tags, created_at, updated_at
+    `, [id, userId, input.title, input.content, input.tags ?? null]);
 
     return result.rows[0] ? mapNote(result.rows[0]) : null;
   }

@@ -4,6 +4,7 @@ export type Note = {
   id: string;
   title: string;
   content: string;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -11,6 +12,7 @@ export type Note = {
 export type CreateNoteInput = {
   title: string;
   content: string;
+  tags?: string[];
 };
 
 export interface NotesRepository {
@@ -38,6 +40,7 @@ export class NotesStore implements NotesRepository {
       id: randomUUID(),
       title: input.title,
       content: input.content,
+      tags: input.tags ?? [],
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -53,6 +56,7 @@ export class NotesStore implements NotesRepository {
 
     note.title = input.title;
     note.content = input.content;
+    if (input.tags !== undefined) note.tags = input.tags;
     note.updatedAt = new Date().toISOString();
     const { userId: _userId, ...publicNote } = note;
     return publicNote;

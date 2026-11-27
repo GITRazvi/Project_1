@@ -4,6 +4,8 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    networks:
+      - backend
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
@@ -23,10 +25,13 @@ services:
       dockerfile: Dockerfile.production
       target: api-production
     restart: unless-stopped
+    networks:
+      - backend
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3001
+      TRUSTED_PROXY: 172.29.111.2
       DATABASE_URL: postgresql://${POSTGRES_USER:?Set POSTGRES_USER in .env.production}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}@db:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
     depends_on:
       db:
@@ -44,6 +49,10 @@ services:
       dockerfile: Dockerfile.production
       target: web-production
     restart: unless-stopped
+    networks:
+      frontend: {}
+      backend:
+        ipv4_address: 172.29.111.2
     depends_on:
       api:
         condition: service_healthy
@@ -51,6 +60,9 @@ services:
   caddy:
     image: caddy:2.11.9-alpine
     restart: unless-stopped
+    networks:
+      frontend:
+        ipv4_address: 172.29.110.2
     environment:
       CADDY_HOST: ${CADDY_HOST:?Set CADDY_HOST in .env.production}
     ports:
@@ -64,7 +76,40 @@ services:
       web:
         condition: service_started
 
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/opt/cloud-notes/scheduled-backup.sh"]
+    networks:
+      - backend
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-3456000}
+      BACKUP_RETRY_SECONDS: ${BACKUP_RETRY_SECONDS:-3600}
+    volumes:
+      - ${BACKUP_DIRECTORY:-./backups}:/backups
+      - ./scripts/scheduled-backup.sh:/opt/cloud-notes/scheduled-backup.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_production_data:
   caddy_data:
   caddy_config:
+
+networks:
+  frontend:
+    ipam:
+      config:
+        - subnet: 172.29.110.0/24
+          ip_range: 172.29.110.128/25
+  backend:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.29.111.0/24
+          ip_range: 172.29.111.128/25

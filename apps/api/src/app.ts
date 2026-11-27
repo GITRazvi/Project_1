@@ -17,6 +17,7 @@ type CredentialsBody = {
 type CreateNoteBody = {
   title?: unknown;
   content?: unknown;
+  tags?: unknown;
 };
 
 type NoteParams = {
@@ -27,6 +28,7 @@ type BuildAppOptions = {
   notesRepository: NotesRepository;
   authRepository: AuthRepository;
   checkDatabase: () => Promise<void>;
+  trustedProxy?: string;
 };
 
 function validateCredentials(body: CredentialsBody): { email: string; password: string } | null {
@@ -49,11 +51,17 @@ function validateCreateNote(body: CreateNoteBody): CreateNoteInput | null {
 
   if (!title || !content || title.length > 120 || content.length > 10_000) return null;
 
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || body.tags.length > 10 || body.tags.some((tag: unknown) => typeof tag !== 'string' || !tag.trim() || tag.trim().length > 30)) return null;
+    const tags = [...new Set((body.tags as string[]).map((tag) => tag.trim().toLowerCase()))];
+    return { title, content, tags };
+  }
+
   return { title, content };
 }
 
-export function buildApp({ notesRepository, authRepository, checkDatabase }: BuildAppOptions) {
-  const app = Fastify({ logger: { redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'] } });
+export function buildApp({ notesRepository, authRepository, checkDatabase, trustedProxy }: BuildAppOptions) {
+  const app = Fastify({ trustProxy: trustedProxy || false, logger: { redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'] } });
 
   app.register(cookie);
   app.register(cors, { origin: true });
@@ -171,7 +179,7 @@ export function buildApp({ notesRepository, authRepository, checkDatabase }: Bui
 
     if (!input) {
       return reply.code(400).send({
-        message: 'A title and content are required. Titles can be up to 120 characters.',
+        message: 'A title and content are required. Use up to 10 tags of at most 30 characters each.',
       });
     }
 
@@ -186,7 +194,7 @@ export function buildApp({ notesRepository, authRepository, checkDatabase }: Bui
 
     if (!input) {
       return reply.code(400).send({
-        message: 'A title and content are required. Titles can be up to 120 characters.',
+        message: 'A title and content are required. Use up to 10 tags of at most 30 characters each.',
       });
     }
 

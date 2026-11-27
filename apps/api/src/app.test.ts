@@ -169,6 +169,22 @@ describe('Cloud Notes API', () => {
     }
   });
 
+  it('uses forwarded client addresses only from the configured trusted proxy', async () => {
+    const isolatedApp = buildApp({ authRepository, notesRepository, checkDatabase, trustedProxy: '172.29.111.2' });
+    const attempt = (remoteAddress: string, forwarded: string) => isolatedApp.inject({
+      method: 'POST', url: '/api/auth/login', remoteAddress,
+      headers: { 'x-forwarded-for': forwarded },
+      payload: { email: 'missing@example.test', password: 'incorrect-password' },
+    });
+    try {
+      for (let i = 0; i < 10; i++) expect((await attempt('172.29.111.2', '192.168.68.10')).statusCode).toBe(401);
+      expect((await attempt('172.29.111.2', '192.168.68.10')).statusCode).toBe(429);
+      expect((await attempt('172.29.111.2', '192.168.68.11')).statusCode).toBe(401);
+      for (let i = 0; i < 10; i++) expect((await attempt('10.0.0.9', `192.168.70.${i}`)).statusCode).toBe(401);
+      expect((await attempt('10.0.0.9', '192.168.70.99')).statusCode).toBe(429);
+    } finally { await isolatedApp.close(); }
+  });
+
   it('reports database availability without exposing errors', async () => {
     const healthy = await app.inject({ method: 'GET', url: '/api/status' });
     expect(healthy.statusCode).toBe(200);
@@ -203,10 +219,11 @@ describe('Cloud Notes API', () => {
       const otherCookie = await register();
       const created = await app.inject({
         method: 'POST', url: '/api/notes', headers: { cookie: ownerCookie },
-        payload: { title: 'Private', content: 'Only the owner can see this.' },
+        payload: { title: 'Private', content: 'Only the owner can see this.', tags: ['Cloud', ' learning ', 'cloud'] },
       });
       expect(created.statusCode).toBe(201);
       noteId = (JSON.parse(created.body) as { id: string }).id;
+      expect(created.json().tags).toEqual(['cloud', 'learning']);
 
       const list = await app.inject({ method: 'GET', url: '/api/notes', headers: { cookie: otherCookie } });
       expect(JSON.parse(list.body)).toEqual([]);

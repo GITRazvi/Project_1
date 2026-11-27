@@ -136,3 +136,22 @@ After the main-branch build-and-test job passes, publish API and web images to
 GHCR with the full tested commit SHA. Keep deployment manual using a Compose
 override so the home server owner chooses the version and timing; do not assume
 rolling back containers reverses database migrations.
+
+## 2026-11-27 — Restrict proxy trust and restore only into new databases
+
+Use separate Docker networks with fixed adjacent-proxy addresses. Caddy replaces
+incoming forwarding headers, Nginx trusts only Caddy, and Fastify trusts only
+Nginx. Client address preservation through Docker Desktop must be verified on
+the host. Backups use PostgreSQL custom archives; the restore helper creates a
+new database and does not overwrite or automatically switch the live app.
+
+Store simple per-note tags as a bounded text array and filter the user's loaded
+notes in the browser. This keeps the initial search implementation small and
+retains existing API behavior for callers that omit tags.
+
+## 2026-11-27 — Schedule local backups in the production stack
+
+Run a PostgreSQL client container that creates an archive on service startup
+and every 40 days thereafter, retrying failures hourly. Keep archives in the
+local ignored `backups/` folder without automatic deletion, per the user's
+preference. The database and its local backup still share the PC's failure risk.

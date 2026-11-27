@@ -40,6 +40,7 @@ describe('Cloud Notes interface', () => {
           id: 'note-1',
           title: 'Cloud practice',
           content: 'Learn how sessions protect notes.',
+          tags: ['security'],
           createdAt: '2026-11-18T10:00:00.000Z',
           updatedAt: '2026-11-18T10:00:00.000Z',
         }]);
@@ -53,6 +54,10 @@ describe('Cloud Notes interface', () => {
     expect(await screen.findByText(testUser.email)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Cloud practice' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Search notes and tags'), { target: { value: 'security' } });
+    expect(screen.getByRole('heading', { name: 'Cloud practice' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Search notes and tags'), { target: { value: 'no-match' } });
+    expect(screen.getByText('No notes match your search.')).toBeInTheDocument();
   });
 
   it('logs in and then returns to the login screen after logout', async () => {

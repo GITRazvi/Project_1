@@ -38,8 +38,12 @@ continuous integration, and cloud deployment.
   - [x] Add and configure Caddy as the HTTPS reverse-proxy container for home LAN hosting.
   - [x] Add service status checks and structured operational logging.
   - [x] Publish versioned production images after successful CI and document manual deployment.
+  - [x] Add database backup and safe restore tooling.
+  - [x] Schedule local database backups at startup and every 40 days.
+  - [ ] Apply login limits per LAN device using trusted proxies; verify from two actual devices after deployment.
+  - [x] Add note search and tags.
 - [ ] 9. Rebuild selected cloud components on AWS to deepen cloud knowledge.
 
 ## Current focus
 
-Push and merge the image publishing workflow, then verify its first GitHub run before a manual home-server deployment.
+Review and deploy the pending home-server improvements and verify distinct LAN client addresses.
